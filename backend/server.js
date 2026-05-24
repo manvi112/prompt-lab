@@ -16,7 +16,7 @@ const groq = new Groq(
 
 app.post('/chat', async (req, res) => {
   try {
-    const { userMessage, systemMessage, maxCompToken, temperature } = req.body;
+    const { userMessage, systemMessage, maxCompToken, temperature, model, presencePenalty, frequencyPenalty } = req.body;
 
     if (!userMessage) {
       return res.status(400).json({ error: 'userMessage is required' })
@@ -24,11 +24,11 @@ app.post('/chat', async (req, res) => {
 
     const completion = await groq.chat.completions.create({
 
-      model: "llama-3.3-70b-versatile",
+      model: model || "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
-          content: systemMessage,
+          content: systemMessage || "You are a helpful assistant."
         },
         {
           role: "user",
@@ -38,6 +38,8 @@ app.post('/chat', async (req, res) => {
       temperature: temperature ?? 0.3,
       n: 1,
       max_completion_tokens: maxCompToken || 200,
+      presence_penalty: presencePenalty ?? 0,
+      frequency_penalty: frequencyPenalty ?? 0,
     })
 
     res.json({ reply: completion.choices[0].message.content, usage: completion.usage })

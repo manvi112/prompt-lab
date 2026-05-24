@@ -15,6 +15,14 @@
       placeholder="SYSTEM PROMPT"></textarea>
     <textarea id="userPrompt" class="text-center border border-[#4FB4DB] w-full px-[20px] py-[5px] rounded-[10px] "
       placeholder="USER PROMPT"></textarea>
+    <div class="flex gap-[10px] w-full justify-center bg-[#4FB4DB] text-white px-[15px] py-[5px] rounded-[10px]">
+      <label for="models">Choose a Model :</label>
+      <select id="models" class="bg-[#4FB4DB]">
+        <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+        <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+        <option value="gemma2-9b-it">gemma2-9b-it</option>
+      </select>
+    </div>
     <div class="flex justify-between w-full px-[40px]">
       <div class="flex flex-col gap-[7px]">
         <label for="temp" class="text-[#488099]">Temperature:</label>
@@ -33,6 +41,32 @@
           class="border border-[#4FB4DB] p-[3.5px] rounded-[5px] text-[#488099]">
       </div>
     </div>
+
+    <div class="flex justify-between w-full px-[40px]">
+      <div class="flex flex-col gap-[7px]">
+        <label for="temp" class="text-[#488099]">Presence Penalty:</label>
+        <input type="range" min="-2" max="2" value="0" id="presence_penalty" step="0.1" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none 
+          cursor-pointer 
+         [&::-webkit-slider-thumb]:appearance-none 
+         [&::-webkit-slider-thumb]:w-3 
+         [&::-webkit-slider-thumb]:h-3 
+         [&::-webkit-slider-thumb]:rounded-full 
+         [&::-webkit-slider-thumb]:bg-[#4FB4DB]">
+        <p class="text-[#488099]">Value: <span class="text-[#488099]" id="presence_value"></span></p>
+      </div>
+      <div class="flex flex-col gap-[7px]">
+        <label for="temp" class="text-[#488099]">Frequency Penalty:</label>
+        <input type="range" min="-2" max="2" value="0" id="frequency_penalty" step="0.1" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none 
+          cursor-pointer 
+         [&::-webkit-slider-thumb]:appearance-none 
+         [&::-webkit-slider-thumb]:w-3 
+         [&::-webkit-slider-thumb]:h-3 
+         [&::-webkit-slider-thumb]:rounded-full 
+         [&::-webkit-slider-thumb]:bg-[#4FB4DB]">
+        <p class="text-[#488099]">Value: <span class="text-[#488099]" id="freq_value"></span></p>
+      </div>
+    </div>
+
     <button id="sendBtn"
       class="bg-[#4FB4DB] text-white px-[20px] py-[10px] rounded-[10px] w-full uppercase">Send</button>
     <div id="reply"
@@ -47,15 +81,22 @@
   </div>
 </body>
 
-<script src="config.js"></script>
-
-
 <script>
 
   document.getElementById('valueDisplay').innerText = document.getElementById('temp').value
+  document.getElementById('presence_value').innerText = document.getElementById('presence_penalty').value
+  document.getElementById('freq_value').innerText = document.getElementById('frequency_penalty').value
 
   document.getElementById('temp').addEventListener('input', function () {
     document.getElementById('valueDisplay').innerText = this.value
+  })
+
+  document.getElementById('presence_penalty').addEventListener('input', function () {
+    document.getElementById('presence_value').innerText = this.value
+  })
+
+  document.getElementById('frequency_penalty').addEventListener('input', function () {
+    document.getElementById('freq_value').innerText = this.value
   })
 
   document.getElementById('sendBtn').addEventListener('click', async function () {
@@ -64,11 +105,10 @@
 
     const maxCompToken = Number(document.getElementById('comp_token').value)
     const temperature = Number(document.getElementById('temp').value)
+    const model = document.getElementById('models').value;
 
-    if (!systemMessage && !userMessage) {
-      alert('Please fill in both prompts')
-      return
-    }
+    const presencePenalty = Number(document.getElementById('presence_penalty').value)
+    const frequencyPenalty = Number(document.getElementById('frequency_penalty').value)
 
     if (!userMessage) {
       alert('Please enter a user message')
@@ -79,7 +119,7 @@
       const response = await fetch(`http://localhost:4000/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemMessage, userMessage, maxCompToken, temperature })
+        body: JSON.stringify({ systemMessage, userMessage, maxCompToken, temperature, model, presencePenalty, frequencyPenalty })
       })
 
       const data = await response.json()
