@@ -4,7 +4,8 @@ A sandbox UI to experiment with LLM API parameters using Groq.
 
 ## What it does
 - Send custom system and user prompts to an LLM
-- Control temperature and max completion tokens via UI
+- Switch between multiple models (Llama 3.3 70b, Llama 3.1 8b, Gemma 2 9b)
+- Control temperature, max completion tokens, presence penalty, frequency penalty via UI
 - See token usage (prompt, completion, total) after every response
 
 ## Tech Stack
@@ -28,4 +29,24 @@ A sandbox UI to experiment with LLM API parameters using Groq.
 - How LLM API parameters work (temperature, max_completion_tokens, top_p, stop, stream)
 - The 3 prompt roles — system, user, assistant
 - How tokens are counted and why context window size matters
-- How presence and frequency penalty shape responses
+- How presence and frequency penalty shape response variety
+- Difference between models — speed vs capability tradeoffs
+- How to structure a full stack project with Express backend and vanilla JS frontend
+
+## How LLMs work — my understanding
+
+LLMs are next-word prediction machines built on the transformer architecture. 
+The core components:
+
+- **Tokenization** — text is split into tokens before the model processes it
+- **Embeddings** — tokens are converted into vectors (numbers representing meaning)
+- **Attention mechanism** — the model understands each token in context of all 
+  other tokens simultaneously, not word by word
+- **Feed forward layers** — after attention captures relationships, feed forward 
+  layers process that information deeper
+- **Pretraining** — models are trained on petabytes of data to predict the next token
+- **Fine tuning + RLHF** — pretrained models are then shaped for specific behavior 
+  using human feedback and reward modeling
+
+This project sits on top of all of that — using the final API to experiment with 
+how these internals affect real outputs.
