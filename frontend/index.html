@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+  <div
+    class="flex flex-col max-w-[750px] items-center justify-center gap-[20px] mx-auto my-[30px] rounded-[20px] p-[30px] border-[2px] border-[#488099]">
+    <textarea id="systemPrompt" class="text-center border border-[#4FB4DB] w-full px-[20px] py-[5px] rounded-[10px] "
+      placeholder="SYSTEM PROMPT"></textarea>
+    <textarea id="userPrompt" class="text-center border border-[#4FB4DB] w-full px-[20px] py-[5px] rounded-[10px] "
+      placeholder="USER PROMPT"></textarea>
+    <div class="flex justify-between w-full px-[40px]">
+      <div class="flex flex-col gap-[7px]">
+        <label for="temp" class="text-[#488099]">Temperature:</label>
+        <input type="range" min="0.1" max="2" value="0.3" id="temp" step="0.01" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none 
+          cursor-pointer 
+         [&::-webkit-slider-thumb]:appearance-none 
+         [&::-webkit-slider-thumb]:w-3 
+         [&::-webkit-slider-thumb]:h-3 
+         [&::-webkit-slider-thumb]:rounded-full 
+         [&::-webkit-slider-thumb]:bg-[#4FB4DB]">
+        <p class="text-[#488099]">Value: <span class="text-[#488099]" id="valueDisplay"></span></p>
+      </div>
+      <div class="flex flex-col gap-[5px]">
+        <label for="comp_token" class="text-[#488099]">Max Completion Token:</label>
+        <input type="number" min="0" max="600" value="150" id="comp_token" name="quantity"
+          class="border border-[#4FB4DB] p-[3.5px] rounded-[5px] text-[#488099]">
+      </div>
+    </div>
+    <button id="sendBtn"
+      class="bg-[#4FB4DB] text-white px-[20px] py-[10px] rounded-[10px] w-full uppercase">Send</button>
+    <div id="reply"
+      class="hidden text-center border border-[#4FB4DB] w-full px-[20px] py-[5px] rounded-[10px] h-[220px] overflow-hidden overflow-y-scroll">
+    </div>
+    <div id="usage"
+      class="hidden flex justify-between gap-[20px] px-[20px] py-[5px] rounded-[10px] border border-[#4FB4DB] text-[#488099] text-sm">
+      <p>Prompt tokens: <span id="promptTokens"></span></p>
+      <p>Completion tokens: <span id="completionTokens"></span></p>
+      <p>Total tokens: <span id="totalTokens"></span></p>
+    </div>
+  </div>
+</body>
+
+<script src="config.js"></script>
+
+
+<script>
+
+  document.getElementById('valueDisplay').innerText = document.getElementById('temp').value
+
+  document.getElementById('temp').addEventListener('input', function () {
+    document.getElementById('valueDisplay').innerText = this.value
+  })
+
+  document.getElementById('sendBtn').addEventListener('click', async function () {
+    const systemMessage = document.getElementById('systemPrompt').value;
+    const userMessage = document.getElementById('userPrompt').value;
+
+    const maxCompToken = Number(document.getElementById('comp_token').value)
+    const temperature = Number(document.getElementById('temp').value)
+
+    if (!systemMessage && !userMessage) {
+      alert('Please fill in both prompts')
+      return
+    }
+
+    if (!userMessage) {
+      alert('Please enter a user message')
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:4000/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemMessage, userMessage, maxCompToken, temperature })
+      })
+
+      const data = await response.json()
+      console.log(data)
+
+      const replyDiv = document.getElementById('reply')
+      replyDiv.innerText = data.reply
+      replyDiv.classList.remove('hidden')
+
+      const usage = data.usage
+      document.getElementById('promptTokens').innerText = usage.prompt_tokens
+      document.getElementById('completionTokens').innerText = usage.completion_tokens
+      document.getElementById('totalTokens').innerText = usage.total_tokens
+      document.getElementById('usage').classList.remove('hidden')
+
+    } catch (error) {
+      const replyDiv = document.getElementById('reply')
+      replyDiv.innerText = 'Something went wrong. Check your backend.'
+      replyDiv.classList.remove('hidden')
+    }
+  });
+</script>
+
+</html>
