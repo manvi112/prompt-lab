@@ -13,8 +13,6 @@
     class="flex flex-col max-w-[750px] items-center justify-center gap-[20px] mx-auto my-[30px] rounded-[20px] p-[30px] border-[2px] border-[#488099]">
     <textarea id="systemPrompt" class="text-center border border-[#4FB4DB] w-full px-[20px] py-[5px] rounded-[10px] "
       placeholder="SYSTEM PROMPT"></textarea>
-    <textarea id="userPrompt" class="text-center border border-[#4FB4DB] w-full px-[20px] py-[5px] rounded-[10px] "
-      placeholder="USER PROMPT"></textarea>
     <div class="flex gap-[10px] w-full justify-center bg-[#4FB4DB] text-white px-[15px] py-[5px] rounded-[10px]">
       <label for="models">Choose a Model :</label>
       <select id="models" class="bg-[#4FB4DB]">
@@ -67,10 +65,15 @@
       </div>
     </div>
 
+    <textarea id="userPrompt" class="text-center border border-[#4FB4DB] w-full px-[20px] py-[5px] rounded-[10px] "
+      placeholder="USER PROMPT"></textarea>
     <button id="sendBtn"
       class="bg-[#4FB4DB] text-white px-[20px] py-[10px] rounded-[10px] w-full uppercase">Send</button>
-    <div id="reply"
-      class="hidden text-center border border-[#4FB4DB] w-full px-[20px] py-[5px] rounded-[10px] h-[220px] overflow-hidden overflow-y-scroll">
+
+
+
+    <div id="chatArea"
+      class="w-full border border-[#4FB4DB] rounded-[10px] h-[400px] overflow-y-scroll flex flex-col gap-[10px] p-[15px]">
     </div>
     <div id="usage"
       class="hidden flex justify-between gap-[20px] px-[20px] py-[5px] rounded-[10px] border border-[#4FB4DB] text-[#488099] text-sm">
@@ -100,13 +103,11 @@
   })
 
   document.getElementById('sendBtn').addEventListener('click', async function () {
-    const systemMessage = document.getElementById('systemPrompt').value;
-    const userMessage = document.getElementById('userPrompt').value;
-
+    const systemMessage = document.getElementById('systemPrompt').value
+    const userMessage = document.getElementById('userPrompt').value
     const maxCompToken = Number(document.getElementById('comp_token').value)
     const temperature = Number(document.getElementById('temp').value)
-    const model = document.getElementById('models').value;
-
+    const model = document.getElementById('models').value
     const presencePenalty = Number(document.getElementById('presence_penalty').value)
     const frequencyPenalty = Number(document.getElementById('frequency_penalty').value)
 
@@ -114,6 +115,21 @@
       alert('Please enter a user message')
       return
     }
+
+    const chatArea = document.getElementById('chatArea')
+
+    // show user message immediately
+    chatArea.innerHTML += `
+    <div class="self-end bg-[#4FB4DB] text-white px-[15px] py-[8px] rounded-[15px] rounded-br-none max-w-[70%] text-left">
+      ${userMessage}
+    </div>
+  `
+
+    // clear input
+    document.getElementById('userPrompt').value = ''
+
+    // scroll to bottom
+    chatArea.scrollTop = chatArea.scrollHeight
 
     try {
       const response = await fetch(`http://localhost:4000/chat`, {
@@ -123,11 +139,15 @@
       })
 
       const data = await response.json()
-      console.log(data)
 
-      const replyDiv = document.getElementById('reply')
-      replyDiv.innerText = data.reply
-      replyDiv.classList.remove('hidden')
+      // add assistant reply
+      chatArea.innerHTML += `
+      <div class="self-start bg-[#f0f0f0] text-[#333] px-[15px] py-[8px] rounded-[15px] rounded-bl-none max-w-[70%] text-left">
+        ${data.reply}
+      </div>
+    `
+
+      chatArea.scrollTop = chatArea.scrollHeight
 
       const usage = data.usage
       document.getElementById('promptTokens').innerText = usage.prompt_tokens
@@ -136,11 +156,14 @@
       document.getElementById('usage').classList.remove('hidden')
 
     } catch (error) {
-      const replyDiv = document.getElementById('reply')
-      replyDiv.innerText = 'Something went wrong. Check your backend.'
-      replyDiv.classList.remove('hidden')
+      chatArea.innerHTML += `
+      <div class="self-start bg-red-100 text-red-500 px-[15px] py-[8px] rounded-[15px] max-w-[70%]">
+        Something went wrong. Check your backend.
+      </div>
+    `
+      chatArea.scrollTop = chatArea.scrollHeight
     }
-  });
+  })
 </script>
 
 </html>

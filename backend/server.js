@@ -14,13 +14,21 @@ const groq = new Groq(
     apiKey: process.env.GROQ_API_KEY
   });
 
+let chatHistory = []
+
+
 app.post('/chat', async (req, res) => {
   try {
+
     const { userMessage, systemMessage, maxCompToken, temperature, model, presencePenalty, frequencyPenalty } = req.body;
 
     if (!userMessage) {
       return res.status(400).json({ error: 'userMessage is required' })
     }
+
+    chatHistory.push({ role: "user", content: userMessage })
+
+    const window = chatHistory.slice(-10)
 
     const completion = await groq.chat.completions.create({
 
@@ -30,10 +38,7 @@ app.post('/chat', async (req, res) => {
           role: "system",
           content: systemMessage || "You are a helpful assistant."
         },
-        {
-          role: "user",
-          content: userMessage,
-        },
+        ...window
       ],
       temperature: temperature ?? 0.3,
       n: 1,
@@ -42,7 +47,13 @@ app.post('/chat', async (req, res) => {
       frequency_penalty: frequencyPenalty ?? 0,
     })
 
-    res.json({ reply: completion.choices[0].message.content, usage: completion.usage })
+    const reply = completion.choices[0].message.content
+
+    chatHistory.push({ role: "assistant", content: reply })
+
+    res.json({ reply, usage: completion.usage })
+
+
 
   } catch (error) {
     res.status(500).json({ error: error.message })
