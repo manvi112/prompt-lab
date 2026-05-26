@@ -15,6 +15,7 @@ const groq = new Groq(
   });
 
 let chatHistory = []
+let summary = null
 
 
 app.post('/chat', async (req, res) => {
@@ -28,7 +29,38 @@ app.post('/chat', async (req, res) => {
 
     chatHistory.push({ role: "user", content: userMessage })
 
-    const window = chatHistory.slice(-10)
+    console.log("History length:", chatHistory.length)
+
+    if (chatHistory.length > 10) {
+      const oldMessages = chatHistory.slice(0, -6);
+      const recentMessages = chatHistory.slice(-6);
+
+      const summarizedText = [...(summary ? [`Previous summary: ${summary}`] : []),
+      ...oldMessages.map(m => `${m.role}: ${m.content}`)
+      ].join('\n')
+
+      chatHistory = recentMessages
+
+      const summaryCompletion = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "system",
+            content: "You are a summarizer. Summarize the following conversation concisely. Always explicitly mention the user's name, key facts about them, and important topics discussed. Never confuse people mentioned in conversation with the user themselves."
+          },
+          {
+            role: "user",
+            content: summarizedText
+          }
+        ],
+        temperature: 0,
+        max_completion_tokens: 300
+      })
+
+      summary = summaryCompletion.choices[0].message.content
+      console.log("Summary generated:", summary)
+    }
+
 
     const completion = await groq.chat.completions.create({
 
@@ -38,7 +70,8 @@ app.post('/chat', async (req, res) => {
           role: "system",
           content: systemMessage || "You are a helpful assistant."
         },
-        ...window
+        ...(summary ? [{ role: "system", content: "Conversation so far : " + summary }] : []),
+        ...chatHistory
       ],
       temperature: temperature ?? 0.3,
       n: 1,
