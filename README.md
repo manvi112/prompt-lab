@@ -6,6 +6,11 @@ A sandbox UI to experiment with LLM API parameters using Groq.
 - Send custom system and user prompts to an LLM
 - Switch between multiple models (Llama 3.3 70b, Llama 3.1 8b, Gemma 2 9b)
 - Control temperature, max completion tokens, presence penalty, frequency penalty via UI
+- Chat UI with message bubbles — user messages on right, assistant on left
+- Three versions of memory management:
+  - Full history — sends entire conversation every request
+  - Sliding window — only sends last 10 messages
+  - Summarization — compresses old context using a smaller model, carries key facts forward
 - See token usage (prompt, completion, total) after every response
 
 ## Tech Stack
@@ -32,6 +37,8 @@ A sandbox UI to experiment with LLM API parameters using Groq.
 - How presence and frequency penalty shape response variety
 - Difference between models — speed vs capability tradeoffs
 - How to structure a full stack project with Express backend and vanilla JS frontend
+- Sliding window tradeoff — lower tokens but loses early context
+- Summarization — how to compress old messages using a secondary LLM call and carry key facts forward across long conversations
 
 ## How LLMs work — my understanding
 
