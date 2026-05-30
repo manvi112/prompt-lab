@@ -19,17 +19,25 @@ let summary = null
 
 
 app.post('/chat', async (req, res) => {
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  })
+  res.flushHeaders()
+
   try {
 
     const { userMessage, systemMessage, maxCompToken, temperature, model, presencePenalty, frequencyPenalty } = req.body;
 
     if (!userMessage) {
-      return res.status(400).json({ error: 'userMessage is required' })
+      res.write(`data: ${JSON.stringify({ error: 'userMessage is required' })}\n\n`)
+      res.end()
+      return
     }
 
     chatHistory.push({ role: "user", content: userMessage })
-
-    console.log("History length:", chatHistory.length)
 
     if (chatHistory.length > 10) {
       const oldMessages = chatHistory.slice(0, -6);
@@ -78,23 +86,35 @@ app.post('/chat', async (req, res) => {
       max_completion_tokens: maxCompToken || 200,
       presence_penalty: presencePenalty ?? 0,
       frequency_penalty: frequencyPenalty ?? 0,
+      stream: true,
     })
 
-    const reply = completion.choices[0].message.content
+    let fullReply = ''
+    let usage = null
 
-    chatHistory.push({ role: "assistant", content: reply })
+    for await (const chunk of completion) {
+      const token = chunk.choices[0]?.delta?.content || ''
+      if (token) {
+        fullReply += token
+        res.write(`data: ${token}\n\n`)
+      }
 
-    res.json({ reply, usage: completion.usage })
+      if (chunk.usage) {
+        usage = chunk.usage
+      }
+    }
 
+    chatHistory.push({ role: "assistant", content: fullReply })
+
+    res.write(`data: ${JSON.stringify({ done: true, usage })}\n\n`)
+    res.end()
 
 
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`)
+    res.end()
   }
 })
 
-app.get('/chat', (req, res) => {
-  res.send("API Working")
-})
 
 app.listen(port, () => console.log('Server started on PORT : ' + port))

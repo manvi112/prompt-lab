@@ -117,6 +117,7 @@
     }
 
     const chatArea = document.getElementById('chatArea')
+    const btn = document.getElementById('sendBtn')
 
     // show user message immediately
     chatArea.innerHTML += `
@@ -127,8 +128,14 @@
 
     // clear input
     document.getElementById('userPrompt').value = ''
+    btn.innerHTML = "Sending..."
+    btn.disabled = true;
+    chatArea.scrollTop = chatArea.scrollHeight
 
-    // scroll to bottom
+    const bubble = document.createElement('div')
+    bubble.className = 'self-start bg-[#f0f0f0] text-[#333] px-[15px] py-[8px] rounded-[15px] rounded-bl-none max-w-[70%] text-left'
+    bubble.innerText = '...'
+    chatArea.appendChild(bubble)
     chatArea.scrollTop = chatArea.scrollHeight
 
     try {
@@ -138,32 +145,48 @@
         body: JSON.stringify({ systemMessage, userMessage, maxCompToken, temperature, model, presencePenalty, frequencyPenalty })
       })
 
-      const data = await response.json()
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
 
-      // add assistant reply
-      chatArea.innerHTML += `
-      <div class="self-start bg-[#f0f0f0] text-[#333] px-[15px] py-[8px] rounded-[15px] rounded-bl-none max-w-[70%] text-left">
-        ${data.reply}
-      </div>
-    `
+      bubble.innerText = ''
 
+      while (true) {
+        const { done, value } = await reader.read()
 
-      chatArea.scrollTop = chatArea.scrollHeight
+        if (done) break;
 
-      const usage = data.usage
-      document.getElementById('promptTokens').innerText = usage.prompt_tokens
-      document.getElementById('completionTokens').innerText = usage.completion_tokens
-      document.getElementById('totalTokens').innerText = usage.total_tokens
-      document.getElementById('usage').classList.remove('hidden')
+        const text = decoder.decode(value)
 
+        const lines = text.split('\n').filter(line => line.startsWith('data: '))
+
+        for (const line of lines) {
+          const content = line.replace('data: ', '')
+
+          try {
+            const parsed = JSON.parse(content)
+
+            if (parsed.done && parsed.usage) {
+              document.getElementById('promptTokens').innerText = parsed.usage.prompt_tokens
+              document.getElementById('completionTokens').innerText = parsed.usage.completion_tokens
+              document.getElementById('totalTokens').innerText = parsed.usage.total_tokens
+              document.getElementById('usage').classList.remove('hidden')
+            }
+
+            if (parsed.error) {
+              bubble.innerText = 'Error: ' + parsed.error
+            }
+          } catch {
+            bubble.innerText += content
+            chatArea.scrollTop = chatArea.scrollHeight
+          }
+        }
+      }
     } catch (error) {
-      chatArea.innerHTML += `
-      <div class="self-start bg-red-100 text-red-500 px-[15px] py-[8px] rounded-[15px] max-w-[70%]">
-        Something went wrong. Check your backend.
-      </div>
-    `
-      chatArea.scrollTop = chatArea.scrollHeight
+      bubble.innerText = 'Something went wrong. Check your backend.'
     }
+
+    btn.innerText = 'Send'
+    btn.disabled = false
   })
 </script>
 
